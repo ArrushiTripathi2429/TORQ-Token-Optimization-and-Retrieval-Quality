@@ -1,4 +1,4 @@
-# TORQ — Context-Budgeting RAG Optimizer
+# TORQ — Token Optimization and Retrieval Quality
 
 A LangGraph-based Retrieval-Augmented Generation system that treats LLM context as a **financial budget** — retrieving, scoring, and compressing information so that only the most relevant content fits within a fixed token allowance, without sacrificing answer quality.
 
