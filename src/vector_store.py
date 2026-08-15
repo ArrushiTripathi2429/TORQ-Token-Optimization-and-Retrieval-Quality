@@ -1,1 +1,0 @@
-# vector stores.py file 
