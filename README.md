@@ -1,18 +1,18 @@
-# TORQ — Token Optimization and Retrieval Quality
+# TORQ — Token Optimization and Retrieval Quality 
 
-A LangGraph-based Retrieval-Augmented Generation system that treats LLM context as a **financial budget** — retrieving, scoring, and compressing information so that only the most relevant content fits within a fixed token allowance, without sacrificing answer quality.
+A LangGraph-based Retrieval-Augmented Generation system that treats LLM context as a **financial budget** — retrieving, scoring, and compressing information so that only the most relevant content fits within a fixed token allowance, without sacrificing answer quality. 
 
 ---
 
-## Problem Statement
+## Problem Statement 
 
-Most RAG pipelines retrieve a fixed number of chunks (top-k) and stuff them into the context window regardless of size, relevance density, or cost. This leads to three failure modes:
+Most RAG pipelines retrieve a fixed number of chunks (top-k) and stuff them into the context window regardless of size, relevance density, or cost. This leads to three failure modes: 
 
 1. **Wasted tokens** — irrelevant or redundant chunks eat into the context window, increasing cost and latency without improving answer quality.
 2. **Truncation** — when retrieved content exceeds the context limit, naive systems either fail or blindly truncate, potentially cutting the most relevant information.
 3. **No cost accountability** — most RAG systems don't track *how much* context is actually necessary versus how much is being spent, making it impossible to optimize.
 
-TORQ addresses this by treating the context window as a limited budget that must be actively managed: retrieve broadly, score for relevance, compress intelligently when over budget, and evaluate whether the resulting answer quality holds up — retrying with an adjusted strategy if it doesn't.
+TORQ addresses this by treating the context window as a limited budget that must be actively managed: retrieve broadly, compress intelligently when over budget, and evaluate whether the resulting answer quality holds up — retrying with an adjusted strategy if it doesn't.
 
 **Dataset:** 200 Indian government policy documents (rural development and Uttar Pradesh state policies), used to simulate a realistic, high-volume, long-document retrieval setting where budget pressure is real.
 
