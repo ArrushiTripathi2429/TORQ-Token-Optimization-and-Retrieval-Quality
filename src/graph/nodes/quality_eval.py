@@ -18,27 +18,26 @@ beyond what the context supports.
 
 import os
 import re
-import google.generativeai as genai
+from groq import Groq
 
 from src.graph.state import RAGState
 
-# Cheap/fast model for judging — deliberately NOT the same (expensive)
-# model used for reasoning_node, to keep the quality-check cost low.
-# Move to config.py once that exists.
-JUDGE_MODEL_NAME = "gemini-1.5-flash"
+# Cheap/fast model for judging — deliberately NOT the same (larger,
+# more expensive) model used for reasoning_node, to keep the
+# quality-check cost low even across multiple retries.
+JUDGE_MODEL_NAME = "llama-3.1-8b-instant"
 
-_judge_model = None
+_judge_client = None
 
 
 def _load_judge():
-    global _judge_model
-    if _judge_model is None:
-        api_key = os.environ.get("GOOGLE_API_KEY")
+    global _judge_client
+    if _judge_client is None:
+        api_key = os.environ.get("GROQ_API_KEY")
         if not api_key:
-            raise ValueError("GOOGLE_API_KEY not set. Add it to your .env file.")
-        genai.configure(api_key=api_key)
-        _judge_model = genai.GenerativeModel(JUDGE_MODEL_NAME)
-    return _judge_model
+            raise ValueError("GROQ_API_KEY not set. Add it to your .env file.")
+        _judge_client = Groq(api_key=api_key)
+    return _judge_client
 
 
 JUDGE_PROMPT_TEMPLATE = """Rate the following answer on a scale of 0.0 to 1.0 based on:
@@ -78,15 +77,19 @@ def quality_eval_node(state: RAGState) -> dict:
     Judges the generated answer against the context and query,
     returns a quality_score between 0.0 and 1.0.
     """
-    judge = _load_judge()
+    client = _load_judge()
     prompt = JUDGE_PROMPT_TEMPLATE.format(
         context=state["final_context"],
         query=state["query"],
         answer=state["answer"],
     )
 
-    response = judge.generate_content(prompt)
-    score = _parse_score(response.text)
+    response = client.chat.completions.create(
+        model=JUDGE_MODEL_NAME,
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.0,  # deterministic scoring, no creativity needed for judging
+    )
+    score = _parse_score(response.choices[0].message.content)
 
     print(f"Quality eval: score = {score:.2f}")
 

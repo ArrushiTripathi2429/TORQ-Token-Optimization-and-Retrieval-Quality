@@ -13,26 +13,28 @@ comparison in results/.
 """
 
 import os
-import google.generativeai as genai
+from groq import Groq
 
 # Move to config.py once that exists.
-REASONING_MODEL_NAME = "gemini-1.5-pro"
+# llama-3.3-70b-versatile is Groq's larger, more capable model —
+# appropriate for the main reasoning step. See quality_eval_node.py
+# for the cheaper model used for judging, kept deliberately separate.
+REASONING_MODEL_NAME = "llama-3.3-70b-versatile"
 
-_model = None
+_client = None
 
 
-def _load_model():
-    global _model
-    if _model is None:
-        api_key = os.environ.get("GOOGLE_API_KEY")
+def _load_client():
+    global _client
+    if _client is None:
+        api_key = os.environ.get("GROQ_API_KEY")
         if not api_key:
             raise ValueError(
-                "GOOGLE_API_KEY not set. Add it to your .env file — "
+                "GROQ_API_KEY not set. Add it to your .env file — "
                 "never hardcode API keys directly in source files."
             )
-        genai.configure(api_key=api_key)
-        _model = genai.GenerativeModel(REASONING_MODEL_NAME)
-    return _model
+        _client = Groq(api_key=api_key)
+    return _client
 
 
 PROMPT_TEMPLATE = """You are answering a question using ONLY the context provided below. \
@@ -52,8 +54,12 @@ def generate_answer(query: str, context: str) -> str:
     Sends the assembled context + query to the reasoning LLM and
     returns the generated answer as plain text.
     """
-    model = _load_model()
+    client = _load_client()
     prompt = PROMPT_TEMPLATE.format(context=context, query=query)
 
-    response = model.generate_content(prompt)
-    return response.text.strip()
+    response = client.chat.completions.create(
+        model=REASONING_MODEL_NAME,
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.3,  # low temperature — factual grounding matters more than creativity here
+    )
+    return response.choices[0].message.content.strip()
